@@ -61,6 +61,7 @@ type Status struct {
 	Repeat     string // "off", "all", or "one"
 	Consume    bool
 	Updating   bool
+	Error      string // MPD's last player error, e.g. a file it couldn't open
 }
 
 type SearchResult struct {
@@ -460,6 +461,8 @@ func (c *Client) Status() (Status, error) {
 			st.DurationMS = int(f * 1000)
 		case "updating_db":
 			st.Updating = true
+		case "error":
+			st.Error = a.value
 		}
 	}
 	switch {

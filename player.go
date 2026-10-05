@@ -237,7 +237,13 @@ func renderFooter(st Status, width int, connected bool) string {
 		if state == "" {
 			state = "idle"
 		}
-		line := lipglossJoin(footerLabelStyle.Render(fmt.Sprintf("♪ %s", strings.ToUpper(state))), conn, inner)
+		label := footerLabelStyle.Render(fmt.Sprintf("♪ %s", strings.ToUpper(state)))
+		if st.Error != "" {
+			// A queue whose files MPD can't open fails every track and
+			// stops; without this the footer just says STOPPED.
+			label += " " + errorStyle.Render(st.Error)
+		}
+		line := lipglossJoin(label, conn, inner)
 		return footerStyle.Width(width).Render(line)
 	}
 
@@ -246,6 +252,11 @@ func renderFooter(st Status, width int, connected bool) string {
 		icon = "⏸"
 	}
 	track := fmt.Sprintf("%s %s — %s", icon, st.Track.Artist, st.Track.Title)
+	trackStyle := playerTrackStyle
+	if st.Error != "" {
+		track = "✕ " + st.Error
+		trackStyle = errorStyle
+	}
 
 	pos := formatDuration(st.PositionMS)
 	dur := formatDuration(st.DurationMS)
@@ -293,7 +304,7 @@ func renderFooter(st Status, width int, connected bool) string {
 	}
 	bar := progressBar(st.PositionMS, st.DurationMS, barTotal-2)
 
-	line := playerTrackStyle.Render(track) + " " + bar + " " + footerLabelStyle.Render(meta) + "  " + conn
+	line := trackStyle.Render(track) + " " + bar + " " + footerLabelStyle.Render(meta) + "  " + conn
 
 	return footerStyle.Width(width).Render(line)
 }
