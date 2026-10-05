@@ -8,6 +8,14 @@ It speaks MPD's protocol directly (no libmpdclient, no cgo), stays in sync
 through MPD's `idle` notifications, and renders the now-playing cover art
 (`albumart` / embedded `readpicture`) in the terminal.
 
+![Queue with cover art](screenshots/queue.png)
+
+| Artists (Miller columns) | Albums |
+|---|---|
+| ![Artists](screenshots/artists.png) | ![Albums](screenshots/albums.png) |
+
+![Search](screenshots/search.png)
+
 ## Install
 
 ```sh
