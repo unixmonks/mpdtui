@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/BurntSushi/toml"
 	"github.com/charmbracelet/bubbles/key"
@@ -285,10 +286,7 @@ func (m Model) handleThemePickerKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 	case msg.String() == "enter":
 		m.themePicker = nil
-		if cur := m.currentScreen(); cur != nil {
-			return m, cur.list.NewStatusMessage("theme: " + themeLabel(m.themeName))
-		}
-		return m, nil
+		return m, m.flash("theme: "+themeLabel(m.themeName), 3*time.Second)
 
 	case key.Matches(msg, listKeys.CursorUp):
 		tp.moveCursor(-1)

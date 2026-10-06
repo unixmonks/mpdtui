@@ -52,6 +52,11 @@ type Model struct {
 	pendingD bool
 	ddGen    int
 
+	// flashText is a transient message shown in the footer; flashGen lets
+	// an older message's clear tick leave a newer one alone.
+	flashText string
+	flashGen  int
+
 	// artCache/artFetching are keyed by Track.ArtKey and shared across every
 	// Model copy bubbletea hands back and forth (maps, like slices, carry
 	// their backing storage by reference). playingIndex is a pointer for
@@ -113,6 +118,22 @@ type ddClearMsg struct{ gen int }
 
 func ddTimeout(gen int) tea.Cmd {
 	return tea.Tick(600*time.Millisecond, func(time.Time) tea.Msg { return ddClearMsg{gen: gen} })
+}
+
+type flashClearMsg struct{ gen int }
+
+// flash shows text in the footer for a few seconds. List status bars are
+// hidden (see newListWithDelegate), so this is where action results and
+// errors surface.
+func (m *Model) flash(text string, d time.Duration) tea.Cmd {
+	m.flashText = text
+	m.flashGen++
+	gen := m.flashGen
+	return tea.Tick(d, func(time.Time) tea.Msg { return flashClearMsg{gen: gen} })
+}
+
+func (m *Model) flashErr(err error) tea.Cmd {
+	return m.flash(errorStyle.Render(err.Error()), 6*time.Second)
 }
 
 func (m Model) Init() tea.Cmd { return m.initCmd }
@@ -617,7 +638,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cmds = append(cmds, m.refreshPreview())
 			}
 			if msg.err != nil {
-				cmds = append(cmds, s.list.NewStatusMessage(errorStyle.Render(msg.err.Error())))
+				cmds = append(cmds, m.flashErr(msg.err))
 			}
 			return m, tea.Batch(cmds...)
 		}
@@ -627,22 +648,26 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if s := m.findScreen(msg.screenID); s != nil {
 			cmd := setItems(&s.list, msg.items)
 			if msg.err != nil {
-				return m, s.list.NewStatusMessage(errorStyle.Render(msg.err.Error()))
+				return m, tea.Batch(cmd, m.flashErr(msg.err))
 			}
 			return m, cmd
 		}
 		return m, nil
 
 	case actionResultMsg:
-		var cmds []tea.Cmd
-		if cur := m.currentScreen(); cur != nil {
-			if msg.err != nil {
-				cmds = append(cmds, cur.list.NewStatusMessage(errorStyle.Render(msg.err.Error())))
-			} else if msg.text != "" {
-				cmds = append(cmds, cur.list.NewStatusMessage(msg.text))
-			}
+		if msg.err != nil {
+			return m, m.flashErr(msg.err)
 		}
-		return m, tea.Batch(cmds...)
+		if msg.text != "" {
+			return m, m.flash(msg.text, 3*time.Second)
+		}
+		return m, nil
+
+	case flashClearMsg:
+		if msg.gen == m.flashGen {
+			m.flashText = ""
+		}
+		return m, nil
 
 	case ddClearMsg:
 		if msg.gen == m.ddGen {
@@ -943,7 +968,7 @@ func (m Model) View() string {
 		header += row + "\n"
 	}
 
-	footer := renderFooter(m.status, m.width, m.connected)
+	footer := renderFooter(m.status, m.width, m.connected, m.flashText)
 	return header + m.renderBody() + "\n" + footer
 }
 

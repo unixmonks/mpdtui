@@ -217,7 +217,9 @@ const (
 	minBarWidth   = 6
 )
 
-func renderFooter(st Status, width int, connected bool) string {
+// flash, when set, is a short-lived action result or error (see
+// Model.flash) shown in place of the now-playing line.
+func renderFooter(st Status, width int, connected bool, flash string) string {
 	conn := connectedStyle.Render("●")
 	if !connected {
 		conn = disconnectedStyle.Render("●")
@@ -230,6 +232,10 @@ func renderFooter(st Status, width int, connected bool) string {
 	inner := width - 2
 	if inner < 1 {
 		inner = 1
+	}
+
+	if flash != "" {
+		return footerStyle.Width(width).Render(lipglossJoin(flash, conn, inner))
 	}
 
 	if st.Track == nil {
