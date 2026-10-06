@@ -127,6 +127,40 @@ func cmdPlayTracksFrom(c *Client, ids []string, label string) tea.Cmd {
 	}
 }
 
+// cmdPlayPlaylist is Enter on a playlist item: replace the queue with the
+// whole playlist and start playing it from the top.
+func cmdPlayPlaylist(c *Client, name string) tea.Cmd {
+	return func() tea.Msg {
+		return action(fmt.Sprintf("playing playlist %s", name), c.PlayPlaylist(name))
+	}
+}
+
+// cmdPlayArtist is Enter on an artist item: replace the queue with every
+// track by that artist, album by album, and start playing from the top.
+func cmdPlayArtist(c *Client, artist string) tea.Cmd {
+	return func() tea.Msg {
+		tracks, err := c.ArtistTracks(artist)
+		if err != nil {
+			return action("", err)
+		}
+		err = c.ReplaceQueue(trackIDs(tracks), true)
+		return action(fmt.Sprintf("playing %d tracks by %s", len(tracks), artist), err)
+	}
+}
+
+// cmdPlayGenre is Enter on a genre item: replace the queue with every
+// track in that genre and start playing from the top.
+func cmdPlayGenre(c *Client, genre string) tea.Cmd {
+	return func() tea.Msg {
+		tracks, err := c.GenreTracks(genre)
+		if err != nil {
+			return action("", err)
+		}
+		err = c.ReplaceQueue(trackIDs(tracks), true)
+		return action(fmt.Sprintf("playing %d %s tracks", len(tracks), genre), err)
+	}
+}
+
 func cmdEnqueueAlbum(c *Client, albumID, label string) tea.Cmd {
 	return func() tea.Msg {
 		tracks, err := c.AlbumTracks(albumID)

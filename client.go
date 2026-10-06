@@ -668,6 +668,16 @@ func (c *Client) LoadPlaylist(name string) error {
 	return err
 }
 
+// PlayPlaylist replaces the queue with a stored playlist and starts
+// playing it from the top, in a single batch.
+func (c *Client) PlayPlaylist(name string) error {
+	return c.commandList([]string{
+		formatCommand("clear"),
+		formatCommand("load", name),
+		formatCommand("play", "0"),
+	})
+}
+
 // AddToPlaylist appends uri to a stored playlist, creating it if needed.
 func (c *Client) AddToPlaylist(name, uri string) error {
 	_, err := c.cmd("playlistadd", name, uri)

@@ -435,11 +435,12 @@ func (m *Model) refreshPreview() tea.Cmd {
 }
 
 // playCurrent plays the selected item. Enter is reserved for this alone —
-// navigating into a folder-like item is drillInto's job ("l"). On an album
-// it replaces the queue with the whole album; on a track outside the Queue
-// screen it replaces the queue with that track plus everything listed
-// below it. Within the Queue screen itself, a track just jumps playback to
-// that position rather than rebuilding the queue from its own tail.
+// navigating into a folder-like item is drillInto's job ("l"). On an
+// artist, album, genre, or playlist it replaces the queue with all of its
+// tracks and plays from the top; on a track outside the Queue screen it
+// replaces the queue with that track plus everything listed below it.
+// Within the Queue screen itself, a track just jumps playback to that
+// position rather than rebuilding the queue from its own tail.
 func (m *Model) playCurrent() tea.Cmd {
 	cur := m.currentScreen()
 	if cur == nil {
@@ -452,6 +453,12 @@ func (m *Model) playCurrent() tea.Cmd {
 	switch it.kind {
 	case itemAlbum:
 		return cmdPlayAlbum(m.client, it.id, it.title)
+	case itemArtist:
+		return cmdPlayArtist(m.client, it.id)
+	case itemGenre:
+		return cmdPlayGenre(m.client, it.id)
+	case itemPlaylist:
+		return cmdPlayPlaylist(m.client, it.id)
 	case itemTrack:
 		if cur.kind == screenQueue {
 			return cmdPlayQueueID(m.client, it.track.QueueID)
